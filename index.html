@@ -3,604 +3,478 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>파일 탐색기 투두 매니저</title>
+  <title>작업 탐색기 투두 매니저</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter and Noto Sans KR -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Tailwind Custom Configuration -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Noto Sans KR"', 'Inter', 'sans-serif'],
-          },
-          colors: {
-            winBg: '#f0f3f6',
-            winPanel: '#ffffff',
-            winBorder: '#d1d5db',
-            winActiveTab: '#ffffff',
-            winInactiveTab: '#e5e9f0',
-            winBar: '#e2e7ec',
-            winAccent: '#0067b8',
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Custom scrollbar and subtle transitions */
-    ::-webkit-scrollbar {
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: #f0f2f5;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
-      height: 6px;
     }
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #c5c7cb;
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
       border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #a8abb0;
-    }
-    .folder-tab {
-      position: relative;
-      transition: all 0.15s ease-in-out;
-    }
-    .folder-tab.active {
-      border-bottom-color: #ffffff !important;
-      background-color: #ffffff;
-      font-weight: 600;
-      color: #0f172a;
-    }
-    .task-card-enter {
-      animation: fadeIn 0.25s ease-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
-<body class="bg-[#e9eef3] text-slate-800 font-sans min-h-screen p-3 sm:p-6 md:p-8 flex justify-center items-start antialiased selection:bg-blue-100">
+<body class="min-h-screen flex items-center justify-center p-3 md:p-6 text-slate-800">
 
-  <!-- Windows Explorer Window Container -->
-  <main class="w-full max-w-4xl bg-winPanel border border-[#bfc7d0] rounded-xl shadow-2xl overflow-hidden flex flex-col transition-all">
+  <!-- 메인 윈도우 컨테이너 -->
+  <div class="w-full max-w-3xl bg-white rounded-xl shadow-xl border border-slate-300 overflow-hidden flex flex-col min-h-[620px]">
     
-    <!-- Titlebar (Windows Inspired) -->
-    <header class="bg-[#dfe6ed] border-b border-[#c8d1db] px-4 py-2.5 flex items-center justify-between select-none">
+    <!-- 윈도우 타이틀 바 -->
+    <div class="bg-slate-100 border-b border-slate-300 px-4 py-2.5 flex items-center justify-between select-none">
+      <div class="flex items-center space-x-2 text-sm font-semibold text-slate-700">
+        <span class="text-amber-500 text-lg">📁</span>
+        <span>작업 탐색기 - C:\Users\User\Tasks</span>
+      </div>
       <div class="flex items-center space-x-2">
-        <!-- Explorer Folder Icon -->
-        <span class="text-xl">📁</span>
-        <h1 class="text-sm font-semibold text-slate-700 tracking-tight">작업 탐색기 - C:\Users\User\Tasks</h1>
-      </div>
-      <!-- Window Controls -->
-      <div class="flex items-center space-x-2">
-        <button type="button" aria-label="최소화" class="w-3.5 h-3.5 rounded-full bg-amber-400 hover:bg-amber-500 transition-colors shadow-sm focus:outline-none"></button>
-        <button type="button" aria-label="최대화" class="w-3.5 h-3.5 rounded-full bg-emerald-400 hover:bg-emerald-500 transition-colors shadow-sm focus:outline-none"></button>
-        <button type="button" aria-label="닫기" class="w-3.5 h-3.5 rounded-full bg-rose-400 hover:bg-rose-500 transition-colors shadow-sm focus:outline-none"></button>
-      </div>
-    </header>
-
-    <!-- Navigation Breadcrumbs & Summary Toolbar -->
-    <div class="bg-[#f7f9fa] border-b border-winBorder px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 text-slate-600">
-      <div class="flex items-center space-x-1.5 overflow-x-auto py-0.5">
-        <span class="text-slate-400">경로:</span>
-        <span class="font-medium text-blue-600 hover:underline cursor-pointer" onclick="switchCategory('전체')">내 할 일</span>
-        <span class="text-slate-400">›</span>
-        <span id="currentPathText" class="font-semibold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">전체</span>
-      </div>
-      <div class="flex items-center space-x-3 text-xs">
-        <span id="statsPinned" class="flex items-center gap-1 font-medium text-amber-600">⭐ 고정: 0</span>
-        <span class="text-slate-300">|</span>
-        <span id="statsCompleted" class="flex items-center gap-1 font-medium text-emerald-600">✔️ 완료: 0/0</span>
+        <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
+        <span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
+        <span class="w-3 h-3 rounded-full bg-rose-400 inline-block"></span>
       </div>
     </div>
 
-    <!-- Folder Tabs (Windows Explorer Tabs) -->
-    <nav aria-label="폴더 카테고리" class="bg-[#ebf0f5] border-b border-winBorder px-3 pt-2.5 flex items-center space-x-1.5 overflow-x-auto">
-      <div id="categoryTabsContainer" class="flex items-center space-x-1.5">
-        <!-- Dynamic tabs generated via JS -->
+    <!-- 탐색기 주소 및 도구 표시줄 (검색창 및 완료 비우기 추가) -->
+    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+      <!-- 경로 네비게이션 -->
+      <div class="flex items-center space-x-1 font-medium">
+        <span>경로:</span>
+        <span class="text-blue-600 font-semibold cursor-pointer hover:underline" onclick="switchCategory('전체')">내 할 일</span>
+        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+        <span id="currentPathName" class="bg-white px-2 py-0.5 border border-slate-300 rounded shadow-sm text-slate-800">전체</span>
       </div>
-      <!-- Add New Folder Button -->
-      <button 
-        id="btnOpenFolderModal" 
-        type="button"
-        title="새 카테고리 폴더 추가"
-        class="flex items-center space-x-1 px-2.5 py-1.5 text-xs text-slate-600 hover:text-blue-600 hover:bg-white/70 rounded-md transition-all font-medium border border-transparent hover:border-slate-300 shrink-0"
-      >
-        <span class="text-base font-bold leading-none">+</span>
-        <span>새 폴더</span>
-      </button>
-    </nav>
 
-    <!-- Task Creation Form Section -->
-    <section class="p-4 sm:p-5 bg-white border-b border-slate-200">
-      <form id="taskForm" class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
-        <!-- Folder Category Selector -->
-        <div class="relative sm:w-44 shrink-0">
-          <label for="taskCategorySelect" class="sr-only">폴더 선택</label>
-          <select 
-            id="taskCategorySelect" 
-            class="w-full pl-3 pr-7 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-          >
-            <!-- Options populated dynamically -->
+      <!-- 우측: 검색창 및 완료 정리 도구 -->
+      <div class="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-end">
+        <!-- 실시간 검색 입력창 -->
+        <div class="relative flex items-center flex-1 sm:w-44">
+          <i class="fa-solid fa-magnifying-glass absolute left-2 text-slate-400 text-[11px]"></i>
+          <input type="text" id="searchInput" placeholder="할 일 검색..." 
+                 class="w-full pl-6 pr-2 py-1 text-xs bg-white border border-slate-300 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                 oninput="handleSearch()">
+        </div>
+
+        <div class="flex items-center space-x-2 shrink-0">
+          <span class="flex items-center text-amber-600 font-medium">
+            <i class="fa-regular fa-star mr-1"></i>고정: <span id="pinnedCount" class="ml-0.5 font-bold">0</span>
+          </span>
+          <span class="text-slate-300">|</span>
+          <span class="flex items-center text-emerald-600 font-medium">
+            <i class="fa-solid fa-check mr-1"></i>완료: <span id="completedCount" class="ml-0.5 font-bold">0</span>/<span id="totalCount" class="font-bold">0</span>
+          </span>
+          <button id="clearCompletedBtn" onclick="clearCompletedTasks()" 
+                  class="hidden text-xs bg-slate-200 hover:bg-rose-100 hover:text-rose-600 text-slate-600 px-2 py-1 rounded transition-colors font-medium">
+            <i class="fa-regular fa-trash-can mr-1"></i>완료 비우기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 폴더 탭 영역 -->
+    <div class="bg-slate-200 border-b border-slate-300 px-4 pt-2.5 flex items-center space-x-1 overflow-x-auto select-none custom-scrollbar" id="folderTabs">
+      <!-- 자바스크립트로 탭 동적 렌더링 -->
+    </div>
+
+    <!-- 본문 작업 영역 -->
+    <div class="p-4 md:p-6 flex-1 flex flex-col bg-white">
+      
+      <!-- 할 일 입력 카드 (카테고리 + 내용 + 마감일) -->
+      <div class="mb-5 bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2">
+        
+        <!-- 카테고리 선택 (폴더 아이콘 단일 표시) -->
+        <div class="relative w-full md:w-36 shrink-0">
+          <select id="todoCategorySelect" 
+                  class="w-full bg-white border border-slate-300 text-slate-700 text-sm rounded-md py-2 pl-3 pr-8 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none font-medium cursor-pointer">
+            <!-- 자바스크립트로 옵션 주입 -->
           </select>
-          <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400 text-xs">
-            ▼
-          </div>
+          <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
         </div>
 
-        <!-- Task Input Field -->
-        <div class="relative flex-grow">
-          <label for="taskInput" class="sr-only">할 일 내용</label>
-          <input 
-            type="text" 
-            id="taskInput" 
-            maxlength="100" 
-            placeholder="어떤 할 일을 기록할까요? (Enter를 눌러 등록)" 
-            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all shadow-sm"
-            required
-          >
+        <!-- 텍스트 입력창 -->
+        <input type="text" id="todoInput" placeholder="어떤 할 일을 기록할까요? (Enter를 눌러 등록)" 
+               class="flex-1 bg-white border border-slate-300 rounded-md px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+               onkeypress="handleKeyPress(event)">
+
+        <!-- 마감일 선택 입력창 (D-Day 기능) -->
+        <div class="relative w-full md:w-36 shrink-0">
+          <input type="date" id="todoDueDate" 
+                 class="w-full bg-white border border-slate-300 text-slate-600 text-xs rounded-md px-2.5 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer">
         </div>
 
-        <!-- Add Button -->
-        <button 
-          type="submit" 
-          class="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-5 py-2.5 rounded-lg text-sm font-semibold tracking-wide shadow-sm hover:shadow transition-all flex items-center justify-center space-x-1 shrink-0"
-        >
+        <!-- 추가 버튼 -->
+        <button onclick="addTodo()" 
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded-md transition-colors shadow-sm flex items-center justify-center space-x-1.5 shrink-0">
           <span>추가</span>
-          <span>➕</span>
+          <i class="fa-solid fa-plus text-xs"></i>
         </button>
-      </form>
-    </section>
-
-    <!-- Task List Area -->
-    <section class="flex-grow p-4 sm:p-6 bg-[#fafbfc] min-h-[360px]">
-      <div class="flex items-center justify-between mb-3 px-1">
-        <h2 id="currentCategoryHeading" class="text-xs uppercase font-bold text-slate-500 tracking-wider">
-          전체 목록
-        </h2>
-        <span id="filteredCountBadge" class="text-xs bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded-full">
-          0개
-        </span>
       </div>
 
-      <!-- Task Items List -->
-      <ul id="taskList" class="space-y-2.5">
-        <!-- Rendered dynamically -->
-      </ul>
-
-      <!-- Empty State -->
-      <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center text-slate-400">
-        <span class="text-5xl mb-2.5">📂</span>
-        <p class="text-base font-medium text-slate-600">폴더가 비어 있습니다.</p>
-        <p class="text-xs text-slate-400 mt-1">상단의 입력창에서 새로운 작업을 추가해 보세요.</p>
+      <!-- 리스트 헤더 -->
+      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200 text-xs font-semibold text-slate-500">
+        <span id="listTitleLabel">작업 목록</span>
+        <span id="filteredCountBadge" class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">0개</span>
       </div>
-    </section>
 
-    <!-- Bottom Status Bar -->
-    <footer class="bg-[#edf2f7] border-t border-slate-200 px-4 py-2 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <!-- 할 일 아이템 목록 리스트 -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[380px]" id="todoList">
+        <!-- 동적으로 할 일 카드 렌더링 -->
+      </div>
+
+    </div>
+
+    <!-- 상태 표시줄 하단 -->
+    <div class="bg-slate-100 border-t border-slate-300 px-4 py-1.5 text-xs text-slate-500 flex items-center justify-between">
       <div class="flex items-center space-x-2">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span>브라우저 저장소 동기화 중 (자동 저장)</span>
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>브라우저 로컬 저장소 동기화 중 (자동 저장)</span>
       </div>
-      <div>
-        <span class="font-medium text-slate-600">Tip:</span> ⭐ 버튼을 클릭하면 최상단에 고정됩니다.
+      <div class="text-[11px] text-slate-400">
+        <span>Tip: ⭐ 버튼을 클릭하면 최상단에 고정됩니다.</span>
       </div>
-    </footer>
+    </div>
+  </div>
 
-  </main>
-
-  <!-- New Folder Modal Dialog -->
-  <div id="folderModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50 transition-opacity">
-    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 border border-slate-200 transform transition-transform">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div class="flex items-center space-x-2 font-bold text-slate-800 text-base">
-          <span>📁</span>
-          <span>새 폴더(카테고리) 생성</span>
-        </div>
-        <button id="btnCloseFolderModal" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+  <!-- 새 폴더 생성 모달 창 -->
+  <div id="newFolderModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden p-5 animate-fade-in">
+      <h3 class="text-base font-bold text-slate-800 mb-1 flex items-center">
+        <span class="mr-2 text-amber-500">📁</span> 새 카테고리 폴더 추가
+      </h3>
+      <p class="text-xs text-slate-500 mb-4">분류할 폴더의 이름을 입력해 주세요.</p>
+      <input type="text" id="newFolderInput" placeholder="예: 운동, 독서, 프로젝트" 
+             class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-4"
+             onkeypress="if(event.key === 'Enter') createNewCategory()">
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeNewFolderModal()" class="px-3.5 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-md border border-slate-300 font-medium transition-colors">취소</button>
+        <button onclick="createNewCategory()" class="px-3.5 py-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors">폴더 만들기</button>
       </div>
-      <form id="folderForm" class="mt-4">
-        <label for="newFolderNameInput" class="block text-xs font-semibold text-slate-600 mb-1">
-          폴더 이름
-        </label>
-        <input 
-          type="text" 
-          id="newFolderNameInput" 
-          maxlength="20"
-          placeholder="예: 프로젝트, 쇼핑, 운동" 
-          class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none mb-4"
-          required
-        >
-        <div class="flex justify-end space-x-2">
-          <button 
-            type="button" 
-            id="btnCancelFolder" 
-            class="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
-          >
-            취소
-          </button>
-          <button 
-            type="submit" 
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
-          >
-            만들기
-          </button>
-        </div>
-      </form>
     </div>
   </div>
 
   <script>
-    // Initial categories and storage keys
-    const STORAGE_KEY_TASKS = 'vibe_win_tasks_v1';
-    const STORAGE_KEY_CATEGORIES = 'vibe_win_categories_v1';
+    // --- 초기 상태 및 로컬스토리지 연동 ---
+    let categories = JSON.parse(localStorage.getItem('task_categories')) || ['업무', '개인', '공부'];
+    let currentCategory = '전체';
+    let searchQuery = '';
 
-    const defaultCategories = ['업무', '개인', '공부'];
+    // 기본 예시 데이터
     const defaultTasks = [
-      {
-        id: '1',
-        title: '윈도우 탐색기 디자인 마무리하기',
-        category: '업무',
-        completed: false,
-        pinned: true,
-        createdAt: Date.now() - 3600000 * 2
-      },
-      {
-        id: '2',
-        title: '바이브 코딩 프로젝트 복습',
-        category: '공부',
-        completed: false,
-        pinned: false,
-        createdAt: Date.now() - 3600000
-      },
-      {
-        id: '3',
-        title: '책상 정리 및 서류 스캔',
-        category: '개인',
-        completed: true,
-        pinned: false,
-        createdAt: Date.now()
-      }
+      { id: 1, text: '윈도우 탐색기 디자인 마무리하기', category: '업무', completed: false, pinned: true, dueDate: '' },
+      { id: 2, text: '책상 정리 및 서류 스캔', category: '개인', completed: true, pinned: false, dueDate: '' },
+      { id: 3, text: '바이브 코딩 프로젝트 복습', category: '공부', completed: false, pinned: false, dueDate: '' }
     ];
 
-    // Reactive State
-    let categories = [];
-    let tasks = [];
-    let currentCategory = '전체';
+    let tasks = JSON.parse(localStorage.getItem('task_items')) || defaultTasks;
 
-    // DOM Elements
-    const categoryTabsContainer = document.getElementById('categoryTabsContainer');
-    const taskCategorySelect = document.getElementById('taskCategorySelect');
-    const taskList = document.getElementById('taskList');
-    const emptyState = document.getElementById('emptyState');
-    const taskForm = document.getElementById('taskForm');
-    const taskInput = document.getElementById('taskInput');
-    const currentPathText = document.getElementById('currentPathText');
-    const currentCategoryHeading = document.getElementById('currentCategoryHeading');
-    const filteredCountBadge = document.getElementById('filteredCountBadge');
-    const statsPinned = document.getElementById('statsPinned');
-    const statsCompleted = document.getElementById('statsCompleted');
+    function saveToStorage() {
+      localStorage.setItem('task_items', JSON.stringify(tasks));
+      localStorage.setItem('task_categories', JSON.stringify(categories));
+    }
 
-    // Folder Modal Elements
-    const folderModal = document.getElementById('folderModal');
-    const btnOpenFolderModal = document.getElementById('btnOpenFolderModal');
-    const btnCloseFolderModal = document.getElementById('btnCloseFolderModal');
-    const btnCancelFolder = document.getElementById('btnCancelFolder');
-    const folderForm = document.getElementById('folderForm');
-    const newFolderNameInput = document.getElementById('newFolderNameInput');
+    // --- D-Day 계산 유틸리티 ---
+    function calculateDDay(dueDateStr) {
+      if (!dueDateStr) return null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const targetDate = new Date(dueDateStr);
+      targetDate.setHours(0, 0, 0, 0);
 
-    function loadState() {
-      try {
-        const storedCats = localStorage.getItem(STORAGE_KEY_CATEGORIES);
-        categories = storedCats ? JSON.parse(storedCats) : defaultCategories;
+      const diffTime = targetDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        const storedTasks = localStorage.getItem(STORAGE_KEY_TASKS);
-        tasks = storedTasks ? JSON.parse(storedTasks) : defaultTasks;
-      } catch (err) {
-        console.error('Failed to load local storage:', err);
-        categories = [...defaultCategories];
-        tasks = [...defaultTasks];
+      if (diffDays === 0) {
+        return { text: 'D-Day (오늘 마감)', badgeClass: 'bg-rose-100 text-rose-700 border-rose-300 font-bold' };
+      } else if (diffDays > 0) {
+        return { text: `D-${diffDays}`, badgeClass: 'bg-blue-50 text-blue-600 border-blue-200' };
+      } else {
+        return { text: `기한 지남 (D+${Math.abs(diffDays)})`, badgeClass: 'bg-rose-50 text-rose-600 border-rose-200' };
       }
     }
 
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
-        localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
-      } catch (err) {
-        console.error('Failed to save to local storage:', err);
-      }
-      updateStats();
-    }
+    // --- 카테고리 탭 렌더링 ---
+    function renderTabs() {
+      const folderTabs = document.getElementById('folderTabs');
+      folderTabs.innerHTML = '';
 
-    function renderCategoryTabs() {
-      categoryTabsContainer.innerHTML = '';
+      // 전체 탭
+      const allActive = currentCategory === '전체';
+      const allTab = document.createElement('button');
+      allTab.className = `px-3.5 py-1.5 text-xs rounded-t-md font-medium flex items-center space-x-1.5 border-t border-x transition-all shrink-0 ${
+        allActive 
+          ? 'bg-white text-slate-800 border-slate-300 font-semibold shadow-sm -mb-px' 
+          : 'bg-slate-200 text-slate-600 border-transparent hover:bg-slate-300/60'
+      }`;
+      allTab.innerHTML = `<span class="text-amber-500">📁</span><span>전체</span>`;
+      allTab.onclick = () => switchCategory('전체');
+      folderTabs.appendChild(allTab);
 
-      // All ('전체') Tab
-      const allTabs = ['전체', ...categories];
-
-      allTabs.forEach(cat => {
-        const isActive = currentCategory === cat;
-        const tabBtn = document.createElement('button');
-        tabBtn.type = 'button';
-        tabBtn.className = `folder-tab flex items-center space-x-1.5 px-3 py-2 text-xs rounded-t-lg border-t border-x border-b-0 cursor-pointer select-none shrink-0 ${
-          isActive 
-            ? 'active bg-white border-slate-300 text-blue-700 shadow-sm' 
-            : 'bg-[#dfe4eb] hover:bg-[#e6ebf2] border-slate-300/80 text-slate-600'
-        }`;
-
-        const icon = cat === '전체' ? '🗂️' : '📁';
-        tabBtn.innerHTML = `
-          <span>${icon}</span>
-          <span class="tracking-tight">${escapeHtml(cat)}</span>
-        `;
-
-        tabBtn.addEventListener('click', () => switchCategory(cat));
-        categoryTabsContainer.appendChild(tabBtn);
-      });
-
-      // Update dropdown in Task Form
-      taskCategorySelect.innerHTML = '';
+      // 개별 카테고리 탭
       categories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = `📁 ${cat}`;
-        if (currentCategory === cat) {
-          option.selected = true;
-        }
-        taskCategorySelect.appendChild(option);
+        const isActive = currentCategory === cat;
+        const tab = document.createElement('button');
+        tab.className = `px-3 py-1.5 text-xs rounded-t-md font-medium flex items-center space-x-1.5 border-t border-x transition-all shrink-0 ${
+          isActive 
+            ? 'bg-white text-slate-800 border-slate-300 font-semibold shadow-sm -mb-px' 
+            : 'bg-slate-200 text-slate-600 border-transparent hover:bg-slate-300/60'
+        }`;
+        tab.innerHTML = `<span class="text-amber-500">📁</span><span>${cat}</span>`;
+        tab.onclick = () => switchCategory(cat);
+        folderTabs.appendChild(tab);
+      });
+
+      // + 새 폴더 추가 버튼
+      const addFolderBtn = document.createElement('button');
+      addFolderBtn.className = 'px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-700 font-medium flex items-center space-x-1 hover:bg-slate-300/50 rounded-md transition-colors ml-1';
+      addFolderBtn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i><span>새 폴더</span>`;
+      addFolderBtn.onclick = openNewFolderModal;
+      folderTabs.appendChild(addFolderBtn);
+
+      renderCategorySelectOptions();
+    }
+
+    // 카테고리 select 드롭다운 옵션 채우기
+    function renderCategorySelectOptions() {
+      const select = document.getElementById('todoCategorySelect');
+      select.innerHTML = '';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = `📁 ${cat}`;
+        if (cat === currentCategory) opt.selected = true;
+        select.appendChild(opt);
       });
     }
 
-    function switchCategory(catName) {
-      currentCategory = catName;
-      currentPathText.textContent = catName;
-      currentCategoryHeading.textContent = catName === '전체' ? '전체 작업 목록' : `${catName} 폴더의 작업`;
-      renderCategoryTabs();
+    // 탭 전환
+    function switchCategory(cat) {
+      currentCategory = cat;
+      document.getElementById('currentPathName').textContent = cat;
+      document.getElementById('listTitleLabel').textContent = cat === '전체' ? '전체 작업 목록' : `${cat} 폴더의 작업`;
+      renderTabs();
       renderTasks();
     }
 
-    function getFilteredAndSortedTasks() {
-      // 1. Filter by category
-      let filtered = tasks;
-      if (currentCategory !== '전체') {
-        filtered = tasks.filter(t => t.category === currentCategory);
-      }
-
-      // 2. Sort: Pinned first (⭐), then unpinned. Within the same pinned state, newest created first
-      return [...filtered].sort((a, b) => {
-        if (a.pinned !== b.pinned) {
-          return a.pinned ? -1 : 1; // Pinned floats to top
-        }
-        return b.createdAt - a.createdAt; // Newer tasks higher
-      });
-    }
-
+    // --- 할 일 렌더링 및 정렬 ---
     function renderTasks() {
-      const visibleTasks = getFilteredAndSortedTasks();
-      filteredCountBadge.textContent = `${visibleTasks.length}개`;
-      taskList.innerHTML = '';
+      const listEl = document.getElementById('todoList');
+      listEl.innerHTML = '';
 
-      if (visibleTasks.length === 0) {
-        emptyState.classList.remove('hidden');
-        emptyState.classList.add('flex');
-      } else {
-        emptyState.classList.add('hidden');
-        emptyState.classList.remove('flex');
-      }
-
-      visibleTasks.forEach(task => {
-        const li = document.createElement('li');
-        li.className = `task-card-enter group flex items-center justify-between p-3 sm:px-4 sm:py-3.5 bg-white rounded-lg border transition-all hover:shadow-md ${
-          task.pinned 
-            ? 'border-amber-300/80 bg-amber-50/40 ring-1 ring-amber-200' 
-            : 'border-slate-200 hover:border-slate-300'
-        } ${task.completed ? 'opacity-65 bg-slate-50' : ''}`;
-
-        // Left section: Checkbox & content
-        const leftWrap = document.createElement('div');
-        leftWrap.className = 'flex items-center space-x-3 min-w-0 pr-2';
-
-        // Checkbox (Task Completion)
-        const checkBtn = document.createElement('button');
-        checkBtn.type = 'button';
-        checkBtn.setAttribute('aria-label', task.completed ? '미완료로 변경' : '완료로 표시');
-        checkBtn.className = `w-5 h-5 rounded flex items-center justify-center border transition-all shrink-0 ${
-          task.completed 
-            ? 'bg-emerald-500 border-emerald-600 text-white font-bold text-xs' 
-            : 'bg-white border-slate-300 hover:border-blue-500 text-transparent'
-        }`;
-        checkBtn.innerHTML = task.completed ? '✓' : '';
-        checkBtn.addEventListener('click', () => toggleTaskCompletion(task.id));
-
-        // Text & Badge container
-        const textContainer = document.createElement('div');
-        textContainer.className = 'flex flex-col min-w-0';
-
-        const titleSpan = document.createElement('span');
-        titleSpan.className = `text-sm font-medium text-slate-800 break-words ${
-          task.completed ? 'line-through text-slate-400 font-normal' : ''
-        }`;
-        titleSpan.textContent = task.title;
-
-        // Meta tags (Folder badge + Pinned tag)
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500';
-        metaDiv.innerHTML = `
-          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-normal border border-slate-200">
-            📁 ${escapeHtml(task.category)}
-          </span>
-          ${task.pinned ? '<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold border border-amber-200">📌 고정됨</span>' : ''}
-        `;
-
-        textContainer.appendChild(titleSpan);
-        textContainer.appendChild(metaDiv);
-
-        leftWrap.appendChild(checkBtn);
-        leftWrap.appendChild(textContainer);
-
-        // Right section: Star toggle & Delete buttons
-        const rightWrap = document.createElement('div');
-        rightWrap.className = 'flex items-center space-x-1 shrink-0';
-
-        // Star Toggle (Pin feature)
-        const starBtn = document.createElement('button');
-        starBtn.type = 'button';
-        starBtn.title = task.pinned ? '상단 고정 해제' : '상단에 고정';
-        starBtn.className = `p-1.5 rounded-md text-base transition-transform active:scale-125 focus:outline-none ${
-          task.pinned 
-            ? 'text-amber-500 hover:text-amber-600' 
-            : 'text-slate-300 hover:text-amber-400'
-        }`;
-        starBtn.innerHTML = task.pinned ? '⭐' : '☆';
-        starBtn.addEventListener('click', () => toggleTaskPin(task.id));
-
-        // Delete button
-        const deleteBtn = document.createElement('button');
-        deleteBtn.type = 'button';
-        deleteBtn.title = '할 일 삭제';
-        deleteBtn.className = 'p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-sm transition-colors focus:outline-none';
-        deleteBtn.innerHTML = '🗑️';
-        deleteBtn.addEventListener('click', () => deleteTask(task.id));
-
-        rightWrap.appendChild(starBtn);
-        rightWrap.appendChild(deleteBtn);
-
-        li.appendChild(leftWrap);
-        li.appendChild(rightWrap);
-
-        taskList.appendChild(li);
+      // 1. 필터링 (카테고리 및 검색어)
+      let filtered = tasks.filter(t => {
+        const matchCategory = currentCategory === '전체' || t.category === currentCategory;
+        const matchSearch = t.text.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchCategory && matchSearch;
       });
 
-      updateStats();
+      // 2. 정렬: Pinned(고정) 항목이 맨 위로, 그다음 미완료 항목 우선
+      filtered.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return b.id - a.id;
+      });
+
+      // 리스트 표시
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="h-48 flex flex-col items-center justify-center text-slate-400 select-none">
+            <span class="text-3xl mb-2">📂</span>
+            <p class="text-sm">표시할 할 일 항목이 없습니다.</p>
+          </div>
+        `;
+      } else {
+        filtered.forEach(task => {
+          const item = document.createElement('div');
+          const ddayInfo = calculateDDay(task.dueDate);
+
+          item.className = `group flex items-center justify-between p-3 rounded-lg border transition-all ${
+            task.pinned 
+              ? 'bg-amber-50/40 border-amber-300 shadow-sm' 
+              : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xs'
+          } ${task.completed ? 'opacity-60 bg-slate-50' : ''}`;
+
+          item.innerHTML = `
+            <div class="flex items-center space-x-3 flex-1 min-w-0 pr-2">
+              <!-- 완료 체크박스 -->
+              <button onclick="toggleComplete(${task.id})" class="w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-slate-400 bg-white'
+              }">
+                ${task.completed ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}
+              </button>
+
+              <!-- 할 일 텍스트 및 뱃지 -->
+              <div class="flex flex-col min-w-0 flex-1">
+                <span class="text-sm font-medium truncate ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}">
+                  ${escapeHtml(task.text)}
+                </span>
+                <div class="flex items-center gap-1.5 mt-1">
+                  <!-- 카테고리 뱃지 -->
+                  <span class="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                    <span class="mr-1 text-[10px]">📁</span>${task.category}
+                  </span>
+                  <!-- D-Day 뱃지 -->
+                  ${ddayInfo ? `
+                    <span class="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded border ${ddayInfo.badgeClass}">
+                      <i class="fa-regular fa-clock mr-1"></i>${ddayInfo.text}
+                    </span>
+                  ` : ''}
+                  <!-- 고정 뱃지 -->
+                  ${task.pinned ? `
+                    <span class="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold border border-amber-200">
+                      📌 고정됨
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- 우측 액션 버튼들 (별표 토글 & 삭제) -->
+            <div class="flex items-center space-x-1 shrink-0">
+              <button onclick="togglePin(${task.id})" title="${task.pinned ? '상단 고정 해제' : '상단 고정하기'}" 
+                      class="p-1.5 rounded hover:bg-slate-100 transition-colors ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400'}">
+                <i class="${task.pinned ? 'fa-solid' : 'fa-regular'} fa-star text-base"></i>
+              </button>
+              <button onclick="deleteTask(${task.id})" title="삭제" 
+                      class="p-1.5 text-slate-300 hover:text-rose-500 rounded hover:bg-slate-100 transition-colors">
+                <i class="fa-regular fa-trash-can text-sm"></i>
+              </button>
+            </div>
+          `;
+          listEl.appendChild(item);
+        });
+      }
+
+      updateStatusCounts();
     }
 
-    function addTask(title, category) {
-      if (!title.trim()) return;
+    // --- 통계 갱신 및 완료 비우기 버튼 제어 ---
+    function updateStatusCounts() {
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.completed).length;
+      const pinned = tasks.filter(t => t.pinned).length;
+
+      document.getElementById('totalCount').textContent = total;
+      document.getElementById('completedCount').textContent = completed;
+      document.getElementById('pinnedCount').textContent = pinned;
+      document.getElementById('filteredCountBadge').textContent = `${tasks.length}개`;
+
+      // 완료된 항목이 있을 때만 '완료 비우기' 버튼 노출
+      const clearBtn = document.getElementById('clearCompletedBtn');
+      if (completed > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+    }
+
+    // --- 작업 조작 함수들 ---
+    function addTodo() {
+      const input = document.getElementById('todoInput');
+      const select = document.getElementById('todoCategorySelect');
+      const dueDateInput = document.getElementById('todoDueDate');
+
+      const text = input.value.trim();
+      if (!text) {
+        input.focus();
+        return;
+      }
 
       const newTask = {
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
-        title: title.trim(),
-        category: category || (categories[0] || '업무'),
+        id: Date.now(),
+        text: text,
+        category: select.value || '업무',
         completed: false,
         pinned: false,
-        createdAt: Date.now()
+        dueDate: dueDateInput.value || ''
       };
 
       tasks.unshift(newTask);
-      saveState();
+      saveToStorage();
+      input.value = '';
+      dueDateInput.value = '';
       renderTasks();
     }
 
-    function toggleTaskCompletion(taskId) {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        task.completed = !task.completed;
-        saveState();
-        renderTasks();
-      }
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') addTodo();
     }
 
-    function toggleTaskPin(taskId) {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        task.pinned = !task.pinned;
-        saveState();
-        renderTasks();
-      }
-    }
-
-    function deleteTask(taskId) {
-      tasks = tasks.filter(t => t.id !== taskId);
-      saveState();
+    function toggleComplete(id) {
+      tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+      saveToStorage();
       renderTasks();
     }
 
-    function updateStats() {
-      const pinnedCount = tasks.filter(t => t.pinned).length;
-      const completedCount = tasks.filter(t => t.completed).length;
-      const totalCount = tasks.length;
-
-      statsPinned.textContent = `⭐ 고정: ${pinnedCount}`;
-      statsCompleted.textContent = `✔️ 완료: ${completedCount}/${totalCount}`;
+    function togglePin(id) {
+      tasks = tasks.map(t => t.id === id ? { ...t, pinned: !t.pinned } : t);
+      saveToStorage();
+      renderTasks();
     }
 
-    function createCategory(name) {
-      const trimmed = name.trim();
-      if (!trimmed || trimmed === '전체' || categories.includes(trimmed)) {
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveToStorage();
+      renderTasks();
+    }
+
+    // 완료된 할 일 일괄 삭제
+    function clearCompletedTasks() {
+      if (!confirm('완료된 모든 작업을 목록에서 삭제하시겠습니까?')) return;
+      tasks = tasks.filter(t => !t.completed);
+      saveToStorage();
+      renderTasks();
+    }
+
+    // 실시간 검색
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value;
+      renderTasks();
+    }
+
+    // --- 모달 제어 및 카테고리 추가 ---
+    function openNewFolderModal() {
+      const modal = document.getElementById('newFolderModal');
+      const input = document.getElementById('newFolderInput');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      input.value = '';
+      input.focus();
+    }
+
+    function closeNewFolderModal() {
+      const modal = document.getElementById('newFolderModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function createNewCategory() {
+      const input = document.getElementById('newFolderInput');
+      const val = input.value.trim();
+      if (!val) return;
+      if (categories.includes(val)) {
+        alert('이미 존재하는 카테고리입니다.');
         return;
       }
-      categories.push(trimmed);
-      saveState();
-      switchCategory(trimmed);
+      categories.push(val);
+      saveToStorage();
+      closeNewFolderModal();
+      switchCategory(val);
     }
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.replace(/[&<>"']/g, m => map[m]);
     }
 
-    // Add task form submission
-    taskForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const val = taskInput.value.trim();
-      const selectedCat = taskCategorySelect.value;
-      if (val) {
-        addTask(val, selectedCat);
-        taskInput.value = '';
-        taskInput.focus();
-      }
-    });
-
-    // Folder Modal toggle
-    btnOpenFolderModal.addEventListener('click', () => {
-      folderModal.classList.remove('hidden');
-      folderModal.classList.add('flex');
-      newFolderNameInput.value = '';
-      setTimeout(() => newFolderNameInput.focus(), 100);
-    });
-
-    function closeFolderModal() {
-      folderModal.classList.add('hidden');
-      folderModal.classList.remove('flex');
-    }
-
-    btnCloseFolderModal.addEventListener('click', closeFolderModal);
-    btnCancelFolder.addEventListener('click', closeFolderModal);
-
-    folderForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const folderName = newFolderNameInput.value.trim();
-      if (folderName) {
-        createCategory(folderName);
-        closeFolderModal();
-      }
-    });
-
-    // Close modal on click outside
-    folderModal.addEventListener('click', (e) => {
-      if (e.target === folderModal) {
-        closeFolderModal();
-      }
-    });
-
-    // Initial boot on load
-    window.addEventListener('DOMContentLoaded', () => {
-      loadState();
-      renderCategoryTabs();
-      renderTasks();
-    });
+    // 초기 실행
+    renderTabs();
+    renderTasks();
   </script>
 </body>
 </html>
